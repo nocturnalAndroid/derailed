@@ -82,7 +82,7 @@ type GameState = {
   train: Train;
   phase: Phase;
   headStartMs: number;  // counts down during pre-game
-  score: number;        // phase B onward
+  score: number;        // phase C onward
 };
 ```
 
@@ -154,7 +154,7 @@ function tick(state, dt):
       state.phase = 'derailed'; return
     lock(state.board, next.tile)        // lock on entry
     state.train = next
-    // phase B: if next.tile is a station, score += N
+    // phase C: if next.tile is a station, score += N
 ```
 
 `computeNextStep(board, train)`:
@@ -164,12 +164,13 @@ function tick(state, dt):
 4. If none → return null.
 5. Return a new `Train { tile: neighbor, entryEdge, exitEdge: theOtherEdgeInTheConnection, progress: 0 }`.
 
-**Special case for self-loop (station):** the connection is `[E, E]`, so the "other edge" is the same edge. `exitEdge == entryEdge`, and the next neighbor will be the tile the train just came from. Reversal falls out of the math.
+**Self-loop traversal (station).** The connection `[E, E]` is matched by the general algorithm — entry edge E matches, the "other edge" is also E, so `exitEdge == entryEdge`. The neighbor across `exitEdge` is the tile the train just came from, which it re-enters via the shared edge. Reversal falls out of the math with no branch in `computeNextStep`.
 
 ### Locking
 
-- On game start: lock the origin tile (train begins inside it).
-- On each successful step: lock the newly-entered tile.
+- **During head-start, all tiles are unlocked** — including origin. The player can rotate any tile, including origin, to set the train's starting heading.
+- **When head-start ends** (phase transitions `pre-game` → `running`): lock origin, derive the train's starting `entryEdge` / `exitEdge` from origin's current rotation, and begin advancing.
+- **On each successful step:** lock the newly-entered tile.
 
 Tapping a locked tile is a no-op.
 
@@ -187,10 +188,12 @@ No drag, no long-press, no gestures.
 
 ## 8. Renderer
 
+**Hex orientation:** pointy-top (vertical long-axis).
+
 On init: render the full board as SVG `<g>` elements (one per tile), each containing the track path(s) for its type. Store refs in a `Map<HexCoord, SVGElement>`.
 
 Per frame:
-- For each tile, set `transform: rotate(60deg * tile.rotation)` (CSS transition handles the animation smoothly).
+- For each tile, set `transform: rotate(60deg * tile.rotation)` (CSS transition handles the animation smoothly). Cheap at this scale — pure rotate transforms are GPU-accelerated, don't trigger layout or paint, and run comfortably at 60 fps on mobile even if we re-set them every frame for all ~50 tiles. If ever needed, easy micro-optimization: only update tiles whose rotation changed since the previous frame.
 - For each tile, toggle a `locked` CSS class (visual indicator is a later polish item).
 - For the train, compute its screen position:
   - Locate the current tile's SVG path for the active connection.
@@ -207,8 +210,8 @@ Station visual and switch indicator are added in their respective phases.
 **In scope:**
 - Fixed hex board, ~50 tiles, sized to fit a phone without panning.
 - Tile types: `straight`, `bend`, `double-bend`, `cross-2`, `cross-3`.
-- Board seeded with random tile types and random rotations. Origin tile forced to one that has an exit edge.
-- Train starts inside origin with a chosen initial exit edge; head-start timer (default 5000 ms).
+- Board seeded with random tile types and random rotations. Origin is placed at axial (0, 0) — the center of the board — and seeded as a `straight` tile so its single connection gives an unambiguous starting heading.
+- Head-start timer (default 5000 ms) during which the board is fully rotatable, including origin. When it expires, the train's starting `entryEdge` / `exitEdge` are derived from origin's current rotation and the train begins advancing.
 - Tap-to-rotate.
 - Train advances, tiles lock on entry, derails on missing neighbor or no matching edge.
 - Start screen ("tap to start"), derailed screen ("tap to restart"). No score. No persistence.
@@ -223,9 +226,9 @@ Station visual and switch indicator are added in their respective phases.
 **Adds:**
 - `station` tile (self-loop, length 2.0).
 - Origin is a station.
-- Score introduced: +N per station visit (N tunable).
-- Score displayed during gameplay, shown on derail screen. Still no persistence.
-- Station visual (colored disc on tile, per GDD mockup).
+- Station visual — a simple placeholder graphic distinct from track (e.g. a filled disc). The GDD mockup is inspirational, not prescriptive; placeholder aesthetic is fine as long as it's not ugly.
+
+Scoring is **not** introduced in Phase B. With no switches, there's only ever one reachable non-origin station, so the train bounces between two fixed points and a score would just count bounces. Scoring moves to Phase C.
 
 **Expected behavior:** with origin-as-station and at least one other station, the train bounces between them indefinitely once a path exists. Tiles lock behind the train on each pass, so the route becomes static. The game effectively ends when a station is reached — this is expected; Phase B is a test bed for the station/reverse mechanic, not a playable game.
 
@@ -238,6 +241,7 @@ Station visual and switch indicator are added in their respective phases.
 - Connectivity resolved at query time based on state: only the active exit is connected.
 - State flips after each pass through the switch.
 - Switch indicator rendered (arrow or dot showing the active exit).
+- **Scoring introduced.** With switches, branches become reachable and routes vary. Score: +N per station visit (N tunable). Displayed during gameplay and on the derail screen. Still no persistence.
 
 **This is where DeRailed becomes a game.** Bouncing between stations now forces the player to build the alternate branch during the return leg before the train, now on return, takes the switch's flipped exit.
 
@@ -276,6 +280,7 @@ Items flagged but intentionally not in MVP:
 - **Pan/zoom** once board outgrows screen.
 - **Solvability test at seed + reshuffle on unsolvable start** (GDD §06 risk).
 - **Sound, derail particle effects, juice** — Canvas overlay path when needed.
+- **Traversed-path color coding** — path from last station visit to current train position in one color; path traversed earlier (before last station) in another. Visual clarity of progress.
 - **Scoring model variations** (combo, per-branch, per-tile) — GDD §06.
 - **Loop-closing mechanics** — ideas to explore:
   - Closed loop = win condition / level advance with point boost.
@@ -297,8 +302,7 @@ Items flagged but intentionally not in MVP:
 
 These are left to implementation phase, not pre-committed here:
 
-- Hex orientation (pointy-top vs flat-top). Either works; pick during implementation.
 - Initial board size and exact layout (hex radius = 3? 4?).
 - Train speed default, head-start default, connection length values — all tunable during Phase A playtesting.
 - Rotation animation duration.
-- Visual style (colors, line weights, typography) — GDD calls for Mini Metro aesthetic; specifics during implementation.
+- Visual style (colors, line weights, typography) — not set in stone; deferred. Placeholder aesthetic acceptable for MVP.
