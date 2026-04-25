@@ -26,7 +26,7 @@ function hideOverlay(): void {
 
 function startGame(): void {
   appEl.innerHTML = '';
-  const board = seedBoard({ radius: 5 });
+  const board = seedBoard({ cols: 9, rows: 20 });
   state = createInitialState(board);
   refs = initRenderer(appEl, board);
   installTapHandlers(refs, board);

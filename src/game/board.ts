@@ -59,25 +59,39 @@ function pickType(rng: () => number): TileType {
   return NON_ORIGIN_WEIGHTS[NON_ORIGIN_WEIGHTS.length - 1]![0];
 }
 
-export type SeedOptions = {
-  radius: number;
-  rng?: () => number;   // defaults to Math.random
-};
+export type SeedOptions =
+  | { radius: number; rng?: () => number }
+  | { cols: number; rows: number; rng?: () => number };
 
 export function seedBoard(opts: SeedOptions): Board {
   const rng = opts.rng ?? Math.random;
   const b = createBoard();
-  const R = opts.radius;
 
-  for (let q = -R; q <= R; q++) {
-    const rMin = Math.max(-R, -q - R);
-    const rMax = Math.min(R,  -q + R);
-    for (let r = rMin; r <= rMax; r++) {
-      const isOrigin = q === 0 && r === 0;
-      const type: TileType = isOrigin ? 'straight' : pickType(rng);
-      const rotation = Math.floor(rng() * 6) as Edge;
-      b.set({ q, r }, { type, rotation, locked: false });
+  const coords: HexCoord[] = [];
+  if ('radius' in opts) {
+    const R = opts.radius;
+    for (let q = -R; q <= R; q++) {
+      const rMin = Math.max(-R, -q - R);
+      const rMax = Math.min(R,  -q + R);
+      for (let r = rMin; r <= rMax; r++) coords.push({ q, r });
     }
+  } else {
+    const colHalf = Math.floor(opts.cols / 2);
+    const rowStart = -Math.floor(opts.rows / 2);
+    for (let i = 0; i < opts.rows; i++) {
+      const row = rowStart + i;
+      for (let j = 0; j < opts.cols; j++) {
+        const col = j - colHalf;
+        coords.push({ q: col - Math.floor(row / 2), r: row });
+      }
+    }
+  }
+
+  for (const h of coords) {
+    const isOrigin = h.q === 0 && h.r === 0;
+    const type: TileType = isOrigin ? 'straight' : pickType(rng);
+    const rotation = Math.floor(rng() * 6) as Edge;
+    b.set(h, { type, rotation, locked: false });
   }
   return b;
 }

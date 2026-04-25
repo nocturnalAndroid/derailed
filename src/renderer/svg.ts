@@ -32,8 +32,9 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
   svg.setAttribute('viewBox', viewBox);
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
-  svg.style.maxWidth = '100vmin';
-  svg.style.maxHeight = '100vmin';
+  svg.style.display = 'block';
+  svg.style.width = '100vw';
+  svg.style.height = '100vh';
   container.appendChild(svg);
 
   const tiles = new Map<string, { group: SVGGElement; paths: SVGPathElement[] }>();
