@@ -70,8 +70,8 @@ describe('tick — running', () => {
     tick(s, DEFAULTS.headStartMs + 1);   // transition to running
     expect(s.phase).toBe('running');
 
-    // Speed 1, length 1 → crossing the tile takes ~1000 ms.
-    tick(s, 1000);
+    // Crossing one length-1 tile takes 1000 / trainSpeed ms.
+    tick(s, 1000 / DEFAULTS.trainSpeed + 1);
     expect(s.phase).toBe('derailed');
   });
 
@@ -83,7 +83,7 @@ describe('tick — running', () => {
     board.set({ q: 2, r: 0 }, makeTile('straight', 4));
     const s = createInitialState(board);
     tick(s, DEFAULTS.headStartMs + 1);   // running
-    tick(s, 1000);                        // progress 0→1: cross into (1,0), train now there
+    tick(s, 1000 / DEFAULTS.trainSpeed + 1);   // cross into (1,0), train now there
     expect(board.get({ q: 1, r: 0 })?.locked).toBe(true);
     expect(board.get({ q: 2, r: 0 })?.locked).toBe(false);
   });

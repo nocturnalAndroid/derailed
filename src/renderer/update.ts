@@ -2,7 +2,7 @@ import type { RendererRefs } from './svg';
 import type { GameState } from '../game/state';
 import { DEFAULTS } from '../game/state';
 import { hexKey } from '../game/hex';
-import { hexToPixel, HEX_SIZE } from './hex-geometry';
+import { hexToPixel, edgeMidpoint, HEX_SIZE } from './hex-geometry';
 import { connections } from '../game/tiles';
 
 export function render(refs: RendererRefs, state: GameState): void {
@@ -29,10 +29,12 @@ function updateTrain(refs: RendererRefs, state: GameState): void {
   const tile = board.get(train.tile);
   if (!tile) return;
 
+  const center = hexToPixel(train.tile);
+
   if (state.phase === 'pre-game') {
-    const { x, y } = hexToPixel(train.tile);
-    refs.train.setAttribute('cx', String(x));
-    refs.train.setAttribute('cy', String(y));
+    const exitMid = edgeMidpoint(train.exitEdge);
+    const angleDeg = (Math.atan2(exitMid.y, exitMid.x) * 180) / Math.PI;
+    refs.train.setAttribute('transform', `translate(${center.x} ${center.y}) rotate(${angleDeg})`);
     return;
   }
 
@@ -50,17 +52,28 @@ function updateTrain(refs: RendererRefs, state: GameState): void {
   if (!path) return;
 
   const forward = train.entryEdge === conns[activeIdx]!.edges[0];
+  const total = path.getTotalLength();
   const t = forward ? train.progress : 1 - train.progress;
+  const len = t * total;
 
-  const local = path.getPointAtLength(t * path.getTotalLength());
-  const center = hexToPixel(train.tile);
+  const local = path.getPointAtLength(len);
+  // Sample slightly ahead in travel direction for heading.
+  const dir = forward ? 1 : -1;
+  const eps = 0.5;
+  const sampleLen = Math.min(total, Math.max(0, len + dir * eps));
+  const lookAhead = path.getPointAtLength(sampleLen);
+  const dxLocal = (lookAhead.x - local.x) * dir;
+  const dyLocal = (lookAhead.y - local.y) * dir;
+
   const rad = (tile.rotation * 60 * Math.PI) / 180;
   const c = Math.cos(rad), s = Math.sin(rad);
   const x = center.x + local.x * c - local.y * s;
   const y = center.y + local.x * s + local.y * c;
+  const hx = dxLocal * c - dyLocal * s;
+  const hy = dxLocal * s + dyLocal * c;
+  const angleDeg = (Math.atan2(hy, hx) * 180) / Math.PI;
 
-  refs.train.setAttribute('cx', String(x));
-  refs.train.setAttribute('cy', String(y));
+  refs.train.setAttribute('transform', `translate(${x} ${y}) rotate(${angleDeg})`);
 }
 
 function updateCountdown(refs: RendererRefs, state: GameState): void {

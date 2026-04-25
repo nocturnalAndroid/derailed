@@ -41,9 +41,23 @@ export function createBoard(): Board {
   };
 }
 
-const NON_ORIGIN_TYPES: ReadonlyArray<TileType> = [
-  'straight', 'bend', 'double-bend', 'cross-2', 'cross-3',
+const NON_ORIGIN_WEIGHTS: ReadonlyArray<readonly [TileType, number]> = [
+  ['straight',    4],
+  ['bend',        6],
+  ['double-bend', 4],
+  ['cross-2',     1],
+  ['cross-3',     1],
 ];
+const TOTAL_WEIGHT = NON_ORIGIN_WEIGHTS.reduce((s, [, w]) => s + w, 0);
+
+function pickType(rng: () => number): TileType {
+  let r = rng() * TOTAL_WEIGHT;
+  for (const [type, w] of NON_ORIGIN_WEIGHTS) {
+    r -= w;
+    if (r < 0) return type;
+  }
+  return NON_ORIGIN_WEIGHTS[NON_ORIGIN_WEIGHTS.length - 1]![0];
+}
 
 export type SeedOptions = {
   radius: number;
@@ -60,9 +74,7 @@ export function seedBoard(opts: SeedOptions): Board {
     const rMax = Math.min(R,  -q + R);
     for (let r = rMin; r <= rMax; r++) {
       const isOrigin = q === 0 && r === 0;
-      const type: TileType = isOrigin
-        ? 'straight'
-        : NON_ORIGIN_TYPES[Math.floor(rng() * NON_ORIGIN_TYPES.length)]!;
+      const type: TileType = isOrigin ? 'straight' : pickType(rng);
       const rotation = Math.floor(rng() * 6) as Edge;
       b.set({ q, r }, { type, rotation, locked: false });
     }

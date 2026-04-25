@@ -11,7 +11,7 @@ export type RendererRefs = {
     group: SVGGElement;
     paths: SVGPathElement[];
   }>;
-  train: SVGCircleElement;
+  train: SVGGElement;
   countdown: SVGTextElement;
   countdownRing: SVGCircleElement;
 };
@@ -67,11 +67,17 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
     tiles.set(hexKey(hex), { group: g, paths: pathEls });
   }
 
-  const train = document.createElementNS(SVG_NS, 'circle');
-  train.setAttribute('r', String(HEX_SIZE * 0.22));
-  train.setAttribute('fill', '#ffffff');
-  train.setAttribute('stroke', '#202020');
-  train.setAttribute('stroke-width', '2');
+  const train = document.createElementNS(SVG_NS, 'g');
+  const tri = document.createElementNS(SVG_NS, 'polygon');
+  const tip = HEX_SIZE * 0.32;
+  const back = HEX_SIZE * 0.22;
+  tri.setAttribute('points', `${tip},0 ${-back},${-back} ${-back},${back}`);
+  tri.setAttribute('fill', '#ffffff');
+  tri.setAttribute('stroke', '#202020');
+  tri.setAttribute('stroke-width', '2');
+  tri.setAttribute('stroke-linejoin', 'round');
+  train.appendChild(tri);
+  train.style.transition = 'transform 0.08s linear';
   svg.appendChild(train);
 
   const countdownRing = document.createElementNS(SVG_NS, 'circle');

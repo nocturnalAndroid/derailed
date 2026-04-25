@@ -13,8 +13,8 @@ export type GameState = {
 };
 
 export const DEFAULTS = {
-  headStartMs: 5000,
-  trainSpeed: 1.0,   // connection-lengths per second
+  headStartMs: 7000,
+  trainSpeed: 0.5,   // connection-lengths per second
 };
 
 function initialTrainFromOrigin(board: Board): Train {
