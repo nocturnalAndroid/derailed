@@ -1,0 +1,92 @@
+import { hexKey } from '../game/hex';
+import type { Board } from '../game/board';
+import { hexToPixel, HEX_SIZE } from './hex-geometry';
+import { tracksFor } from './tile-art';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+export type RendererRefs = {
+  svg: SVGSVGElement;
+  tiles: Map<string, {
+    group: SVGGElement;
+    paths: SVGPathElement[];
+  }>;
+  train: SVGCircleElement;
+};
+
+export function initRenderer(container: HTMLElement, board: Board): RendererRefs {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const [hex] of board.cells()) {
+    const p = hexToPixel(hex);
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const pad = HEX_SIZE * 1.2;
+  const viewBox = `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`;
+
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', viewBox);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.style.maxWidth = '100vmin';
+  svg.style.maxHeight = '100vmin';
+  container.appendChild(svg);
+
+  const tiles = new Map<string, { group: SVGGElement; paths: SVGPathElement[] }>();
+
+  for (const [hex, tile] of board.cells()) {
+    const { x, y } = hexToPixel(hex);
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('data-q', String(hex.q));
+    g.setAttribute('data-r', String(hex.r));
+    g.setAttribute('transform', `translate(${x} ${y}) rotate(0)`);
+    g.style.transition = 'transform 0.12s ease-out';
+    g.style.transformBox = 'fill-box';
+    g.style.transformOrigin = 'center';
+
+    g.appendChild(buildHexBackground(HEX_SIZE));
+
+    const tracks = tracksFor(tile.type);
+    const pathEls: SVGPathElement[] = [];
+    for (const t of tracks) {
+      const p = document.createElementNS(SVG_NS, 'path');
+      p.setAttribute('d', t.d);
+      p.setAttribute('stroke', '#e0c878');
+      p.setAttribute('stroke-width', '4');
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke-linecap', 'round');
+      g.appendChild(p);
+      pathEls.push(p);
+    }
+
+    svg.appendChild(g);
+    tiles.set(hexKey(hex), { group: g, paths: pathEls });
+  }
+
+  const train = document.createElementNS(SVG_NS, 'circle');
+  train.setAttribute('r', String(HEX_SIZE * 0.22));
+  train.setAttribute('fill', '#ffffff');
+  train.setAttribute('stroke', '#202020');
+  train.setAttribute('stroke-width', '2');
+  svg.appendChild(train);
+
+  return { svg, tiles, train };
+}
+
+function buildHexBackground(size: number): SVGPolygonElement {
+  const points: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const angleRad = ((60 * i + 90) * Math.PI) / 180;
+    const x = size * Math.cos(angleRad);
+    const y = -size * Math.sin(angleRad);
+    points.push(`${x},${y}`);
+  }
+  const poly = document.createElementNS(SVG_NS, 'polygon');
+  poly.setAttribute('points', points.join(' '));
+  poly.setAttribute('fill', '#242424');
+  poly.setAttribute('stroke', '#2e2e2e');
+  poly.setAttribute('stroke-width', '1');
+  return poly;
+}
