@@ -1,12 +1,14 @@
 import type { RendererRefs } from './svg';
 import type { GameState } from '../game/state';
+import { DEFAULTS } from '../game/state';
 import { hexKey } from '../game/hex';
-import { hexToPixel } from './hex-geometry';
+import { hexToPixel, HEX_SIZE } from './hex-geometry';
 import { connections } from '../game/tiles';
 
 export function render(refs: RendererRefs, state: GameState): void {
   updateTiles(refs, state);
   updateTrain(refs, state);
+  updateCountdown(refs, state);
 }
 
 function updateTiles(refs: RendererRefs, state: GameState): void {
@@ -50,10 +52,40 @@ function updateTrain(refs: RendererRefs, state: GameState): void {
   const forward = train.entryEdge === conns[activeIdx]!.edges[0];
   const t = forward ? train.progress : 1 - train.progress;
 
-  const pt = path.getPointAtLength(t * path.getTotalLength());
-  const ctm = path.getCTM();
-  const screenPt = ctm ? pt.matrixTransform(ctm) : pt;
+  const local = path.getPointAtLength(t * path.getTotalLength());
+  const center = hexToPixel(train.tile);
+  const rad = (tile.rotation * 60 * Math.PI) / 180;
+  const c = Math.cos(rad), s = Math.sin(rad);
+  const x = center.x + local.x * c - local.y * s;
+  const y = center.y + local.x * s + local.y * c;
 
-  refs.train.setAttribute('cx', String(screenPt.x));
-  refs.train.setAttribute('cy', String(screenPt.y));
+  refs.train.setAttribute('cx', String(x));
+  refs.train.setAttribute('cy', String(y));
+}
+
+function updateCountdown(refs: RendererRefs, state: GameState): void {
+  if (state.phase !== 'pre-game') {
+    refs.countdown.style.display = 'none';
+    refs.countdownRing.style.display = 'none';
+    return;
+  }
+
+  const { x, y } = hexToPixel(state.train.tile);
+  const remaining = Math.max(0, state.headStartMs);
+  const secs = Math.ceil(remaining / 1000);
+  const frac = remaining / DEFAULTS.headStartMs;
+
+  refs.countdown.style.display = '';
+  refs.countdown.setAttribute('x', String(x));
+  refs.countdown.setAttribute('y', String(y));
+  refs.countdown.textContent = String(secs);
+
+  const r = HEX_SIZE * 0.42;
+  const circ = 2 * Math.PI * r;
+  refs.countdownRing.style.display = '';
+  refs.countdownRing.setAttribute('cx', String(x));
+  refs.countdownRing.setAttribute('cy', String(y));
+  refs.countdownRing.setAttribute('transform', `rotate(-90 ${x} ${y})`);
+  refs.countdownRing.setAttribute('stroke-dasharray', String(circ));
+  refs.countdownRing.setAttribute('stroke-dashoffset', String(circ * (1 - frac)));
 }

@@ -13,12 +13,6 @@ let refs: RendererRefs;
 let lastTs = 0;
 let lastPhase: GameState['phase'] | null = null;
 
-function showHint(text: string): void {
-  overlayTextEl.textContent = text;
-  overlayEl.classList.add('visible');
-  overlayEl.classList.remove('blocking');
-}
-
 function showBlocking(text: string): void {
   overlayTextEl.textContent = text;
   overlayEl.classList.add('visible');
@@ -50,7 +44,7 @@ function loop(ts: number): void {
 
   if (state.phase !== lastPhase) {
     lastPhase = state.phase;
-    if (state.phase === 'pre-game')  showHint('Get ready — rotate tiles!');
+    if (state.phase === 'pre-game')  hideOverlay();
     if (state.phase === 'running')   hideOverlay();
     if (state.phase === 'derailed')  showBlocking('Derailed — tap to restart');
   }

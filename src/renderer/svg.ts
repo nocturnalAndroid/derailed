@@ -12,6 +12,8 @@ export type RendererRefs = {
     paths: SVGPathElement[];
   }>;
   train: SVGCircleElement;
+  countdown: SVGTextElement;
+  countdownRing: SVGCircleElement;
 };
 
 export function initRenderer(container: HTMLElement, board: Board): RendererRefs {
@@ -72,7 +74,26 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
   train.setAttribute('stroke-width', '2');
   svg.appendChild(train);
 
-  return { svg, tiles, train };
+  const countdownRing = document.createElementNS(SVG_NS, 'circle');
+  countdownRing.setAttribute('r', String(HEX_SIZE * 0.42));
+  countdownRing.setAttribute('fill', 'none');
+  countdownRing.setAttribute('stroke', '#e0c878');
+  countdownRing.setAttribute('stroke-width', '3');
+  countdownRing.setAttribute('stroke-linecap', 'round');
+  countdownRing.style.display = 'none';
+  svg.appendChild(countdownRing);
+
+  const countdown = document.createElementNS(SVG_NS, 'text');
+  countdown.setAttribute('text-anchor', 'middle');
+  countdown.setAttribute('dominant-baseline', 'central');
+  countdown.setAttribute('font-size', String(HEX_SIZE * 0.55));
+  countdown.setAttribute('font-weight', '700');
+  countdown.setAttribute('fill', '#1a1a1a');
+  countdown.style.pointerEvents = 'none';
+  countdown.style.display = 'none';
+  svg.appendChild(countdown);
+
+  return { svg, tiles, train, countdown, countdownRing };
 }
 
 function buildHexBackground(size: number): SVGPolygonElement {
