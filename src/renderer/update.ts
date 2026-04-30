@@ -22,12 +22,14 @@ function updateTiles(refs: RendererRefs, state: GameState): void {
       `translate(${x} ${y}) rotate(${tile.rotation * 60})`,
     );
     entry.group.classList.toggle('locked', tile.locked);
-    if ((tile.type === 'switch-l' || tile.type === 'switch-r') && entry.paths.length === 2) {
-      const aActive = tile.switchState === 'A';
-      entry.paths[0]!.setAttribute('stroke-opacity', aActive ? '1' : '0.25');
-      entry.paths[0]!.setAttribute('stroke-dasharray', aActive ? 'none' : '4 3');
-      entry.paths[1]!.setAttribute('stroke-opacity', aActive ? '0.25' : '1');
-      entry.paths[1]!.setAttribute('stroke-dasharray', aActive ? '4 3' : 'none');
+    if (entry.switchArrow && entry.paths.length === 2) {
+      const activeIdx = tile.switchState === 'B' ? 1 : 0;
+      const path = entry.paths[activeIdx]!;
+      const total = path.getTotalLength();
+      const pt = path.getPointAtLength(total * 0.6);
+      const ahead = path.getPointAtLength(Math.min(total, total * 0.6 + 0.5));
+      const angle = Math.atan2(ahead.y - pt.y, ahead.x - pt.x) * 180 / Math.PI;
+      entry.switchArrow.setAttribute('transform', `translate(${pt.x} ${pt.y}) rotate(${angle})`);
     }
   }
 }
@@ -70,8 +72,8 @@ function updateTrain(refs: RendererRefs, state: GameState): void {
   const eps = 0.5;
   const sampleLen = Math.min(total, Math.max(0, len + dir * eps));
   const lookAhead = path.getPointAtLength(sampleLen);
-  const dxLocal = (lookAhead.x - local.x) * dir;
-  const dyLocal = (lookAhead.y - local.y) * dir;
+  const dxLocal = lookAhead.x - local.x;
+  const dyLocal = lookAhead.y - local.y;
 
   const rad = (tile.rotation * 60 * Math.PI) / 180;
   const c = Math.cos(rad), s = Math.sin(rad);

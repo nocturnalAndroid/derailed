@@ -10,6 +10,7 @@ export type RendererRefs = {
   tiles: Map<string, {
     group: SVGGElement;
     paths: SVGPathElement[];
+    switchArrow?: SVGPolygonElement;
   }>;
   train: SVGGElement;
   countdown: SVGTextElement;
@@ -38,7 +39,7 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
   svg.style.height = '100vh';
   container.appendChild(svg);
 
-  const tiles = new Map<string, { group: SVGGElement; paths: SVGPathElement[] }>();
+  const tiles = new Map<string, { group: SVGGElement; paths: SVGPathElement[]; switchArrow?: SVGPolygonElement }>();
 
   for (const [hex, tile] of board.cells()) {
     const { x, y } = hexToPixel(hex);
@@ -76,13 +77,18 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
       g.appendChild(disc);
     }
 
-    if ((tile.type === 'switch-l' || tile.type === 'switch-r') && pathEls.length === 2) {
-      pathEls[1]!.setAttribute('stroke-opacity', '0.25');
-      pathEls[1]!.setAttribute('stroke-dasharray', '4 3');
+    let switchArrow: SVGPolygonElement | undefined;
+    if (tile.type === 'switch-l' || tile.type === 'switch-r') {
+      const sz = HEX_SIZE * 0.12;
+      switchArrow = document.createElementNS(SVG_NS, 'polygon');
+      switchArrow.setAttribute('points', `${sz},0 ${-sz},${-sz * 0.7} ${-sz},${sz * 0.7}`);
+      switchArrow.setAttribute('fill', '#e05050');
+      switchArrow.setAttribute('stroke', 'none');
+      g.appendChild(switchArrow);
     }
 
     svg.appendChild(g);
-    tiles.set(hexKey(hex), { group: g, paths: pathEls });
+    tiles.set(hexKey(hex), { group: g, paths: pathEls, switchArrow });
   }
 
   const train = document.createElementNS(SVG_NS, 'g');

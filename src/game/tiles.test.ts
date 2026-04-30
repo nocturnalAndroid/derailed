@@ -86,47 +86,53 @@ describe('connections — station', () => {
 });
 
 describe('connections — switch-l', () => {
-  it('switch-l state A rotation 0 → [0,2] length 1.0', () => {
+  it('switch-l state A → both paths, [0,2] active', () => {
     const tile: Tile = { type: 'switch-l', rotation: 0, locked: false, switchState: 'A' };
     expect(connections(tile)).toEqual([
-      { edges: [0, 2], length: 1.0 },
+      { edges: [0, 2], length: 1.0, active: true },
+      { edges: [0, 3], length: 1.0, active: false },
     ]);
   });
 
-  it('switch-l state B rotation 0 → [0,3] length 1.0', () => {
+  it('switch-l state B → both paths, [0,3] active', () => {
     const tile: Tile = { type: 'switch-l', rotation: 0, locked: false, switchState: 'B' };
     expect(connections(tile)).toEqual([
-      { edges: [0, 3], length: 1.0 },
+      { edges: [0, 2], length: 1.0, active: false },
+      { edges: [0, 3], length: 1.0, active: true },
     ]);
   });
 
-  it('switch-l state A rotation 2 → [2,4]', () => {
+  it('switch-l state A rotation 2 → [2,4] active, [2,5] inactive', () => {
     const tile: Tile = { type: 'switch-l', rotation: 2, locked: false, switchState: 'A' };
     expect(connections(tile)).toEqual([
-      { edges: [2, 4], length: 1.0 },
+      { edges: [2, 4], length: 1.0, active: true },
+      { edges: [2, 5], length: 1.0, active: false },
     ]);
   });
 });
 
 describe('connections — switch-r', () => {
-  it('switch-r state A rotation 0 → [0,3] length 1.0', () => {
+  it('switch-r state A → both paths, [0,3] active', () => {
     const tile: Tile = { type: 'switch-r', rotation: 0, locked: false, switchState: 'A' };
     expect(connections(tile)).toEqual([
-      { edges: [0, 3], length: 1.0 },
+      { edges: [0, 3], length: 1.0, active: true },
+      { edges: [0, 4], length: 1.0, active: false },
     ]);
   });
 
-  it('switch-r state B rotation 0 → [0,4] length 1.0', () => {
+  it('switch-r state B → both paths, [0,4] active', () => {
     const tile: Tile = { type: 'switch-r', rotation: 0, locked: false, switchState: 'B' };
     expect(connections(tile)).toEqual([
-      { edges: [0, 4], length: 1.0 },
+      { edges: [0, 3], length: 1.0, active: false },
+      { edges: [0, 4], length: 1.0, active: true },
     ]);
   });
 
-  it('switch-r state A rotation 1 → [1,4]', () => {
+  it('switch-r state A rotation 1 → [1,4] active, [1,5] inactive', () => {
     const tile: Tile = { type: 'switch-r', rotation: 1, locked: false, switchState: 'A' };
     expect(connections(tile)).toEqual([
-      { edges: [1, 4], length: 1.0 },
+      { edges: [1, 4], length: 1.0, active: true },
+      { edges: [1, 5], length: 1.0, active: false },
     ]);
   });
 });

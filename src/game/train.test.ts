@@ -111,15 +111,17 @@ describe('computeNextStep', () => {
     expect(next!.exitEdge).toBe(3);
   });
 
-  it('switch-l: entering from non-stem edge derails', () => {
+  it('switch-l: entering from non-stem edge routes to stem', () => {
     const b = createBoard();
     // Train at (-1,1) exits edge 0 → neighbor (0,0). Entry = opposite(0) = 3.
-    // switch-l rotation 0 state A → [0,2]. Neither edge is 3 → derail.
+    // switch-l rotation 0 → [0,2] and [0,3]. Entry 3 matches [0,3], exit = 0 (stem).
     b.set({ q: -1, r: 1 }, makeTile('straight', 0));
     b.set({ q: 0, r: 0 }, { type: 'switch-l', rotation: 0, locked: false, switchState: 'A' } as Tile);
 
     const next = computeNextStep(b, trainOn({ q: -1, r: 1 }, 0, 0));
 
-    expect(next).toBeNull();
+    expect(next).not.toBeNull();
+    expect(next!.entryEdge).toBe(3);
+    expect(next!.exitEdge).toBe(0);
   });
 });

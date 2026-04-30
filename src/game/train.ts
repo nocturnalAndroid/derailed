@@ -16,10 +16,11 @@ export function computeNextStep(board: Board, train: Train): Train | null {
   if (!neighborTile) return null;
 
   const entryEdge = opposite(train.exitEdge);
-  const conn = connections(neighborTile).find(
+  const matches = connections(neighborTile).filter(
     c => c.edges[0] === entryEdge || c.edges[1] === entryEdge,
   );
-  if (!conn) return null;
+  if (matches.length === 0) return null;
+  const conn = matches.find(c => c.active !== false) ?? matches[0]!;
 
   const exitEdge: Edge = conn.edges[0] === entryEdge ? conn.edges[1] : conn.edges[0];
 

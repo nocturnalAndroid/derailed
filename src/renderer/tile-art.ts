@@ -21,7 +21,7 @@ function bendPath(a: Edge, b: Edge): TrackPath {
 
 function stationPath(a: Edge): TrackPath {
   const p1 = edgeMidpoint(a);
-  return { edges: [a, a], d: `M ${p1.x} ${p1.y} L 0 0` };
+  return { edges: [a, a], d: `M ${p1.x} ${p1.y} L 0 0 L ${p1.x} ${p1.y}` };
 }
 
 export function tracksFor(type: TileType): TrackPath[] {

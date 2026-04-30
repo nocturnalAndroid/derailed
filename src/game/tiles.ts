@@ -13,6 +13,7 @@ export type TileType =
 export type Connection = {
   edges: [Edge, Edge];
   length: number;
+  active?: boolean;
 };
 
 export type Tile = {
@@ -43,20 +44,20 @@ function shift(e: Edge, r: number): Edge {
 
 export function connections(tile: Tile): Connection[] {
   if (tile.type === 'switch-l') {
-    const stem: Edge = 0;
-    const exit: Edge = tile.switchState === 'B' ? 3 : 2;
-    return [{
-      edges: [shift(stem, tile.rotation), shift(exit, tile.rotation)],
-      length: 1.0,
-    }];
+    const r = tile.rotation;
+    const stateA = tile.switchState !== 'B';
+    return [
+      { edges: [shift(0, r), shift(2, r)], length: 1.0, active: stateA },
+      { edges: [shift(0, r), shift(3, r)], length: 1.0, active: !stateA },
+    ];
   }
   if (tile.type === 'switch-r') {
-    const stem: Edge = 0;
-    const exit: Edge = tile.switchState === 'B' ? 4 : 3;
-    return [{
-      edges: [shift(stem, tile.rotation), shift(exit, tile.rotation)],
-      length: 1.0,
-    }];
+    const r = tile.rotation;
+    const stateA = tile.switchState !== 'B';
+    return [
+      { edges: [shift(0, r), shift(3, r)], length: 1.0, active: stateA },
+      { edges: [shift(0, r), shift(4, r)], length: 1.0, active: !stateA },
+    ];
   }
   return BASE[tile.type as BaseTileType].map(c => ({
     edges: [shift(c.edges[0], tile.rotation), shift(c.edges[1], tile.rotation)],
