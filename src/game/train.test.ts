@@ -69,4 +69,57 @@ describe('computeNextStep', () => {
     expect(next!.entryEdge).toBe(5);
     expect(next!.exitEdge).toBe(3);
   });
+
+  it('station self-loop: exitEdge equals entryEdge, returns to previous tile', () => {
+    const b = createBoard();
+    // Train at (1,-1) exiting edge 3 → neighbor is (0,0).
+    // Station at (0,0) rotation 0 → self-loop [0,0]. Entry edge = opposite(3) = 0. Matches [0,0]. Exit = 0.
+    b.set({ q: 1, r: -1 }, makeTile('straight', 0));
+    b.set({ q: 0, r: 0 }, { type: 'station', rotation: 0, locked: false } as Tile);
+
+    const next = computeNextStep(b, trainOn({ q: 1, r: -1 }, 0, 3));
+
+    expect(next).not.toBeNull();
+    expect(next!.tile).toEqual({ q: 0, r: 0 });
+    expect(next!.entryEdge).toBe(0);
+    expect(next!.exitEdge).toBe(0);
+  });
+
+  it('switch-l state A: train follows exit edge 2 (shifted by rotation)', () => {
+    const b = createBoard();
+    // Train at (1,-1) exits edge 3 → neighbor (0,0). Entry = opposite(3) = 0.
+    // switch-l rotation 0 state A → [0,2]. Entry 0 matches. Exit = 2.
+    b.set({ q: 1, r: -1 }, makeTile('straight', 0));
+    b.set({ q: 0, r: 0 }, { type: 'switch-l', rotation: 0, locked: false, switchState: 'A' } as Tile);
+
+    const next = computeNextStep(b, trainOn({ q: 1, r: -1 }, 0, 3));
+
+    expect(next).not.toBeNull();
+    expect(next!.entryEdge).toBe(0);
+    expect(next!.exitEdge).toBe(2);
+  });
+
+  it('switch-l state B: train follows exit edge 3', () => {
+    const b = createBoard();
+    b.set({ q: 1, r: -1 }, makeTile('straight', 0));
+    b.set({ q: 0, r: 0 }, { type: 'switch-l', rotation: 0, locked: false, switchState: 'B' } as Tile);
+
+    const next = computeNextStep(b, trainOn({ q: 1, r: -1 }, 0, 3));
+
+    expect(next).not.toBeNull();
+    expect(next!.entryEdge).toBe(0);
+    expect(next!.exitEdge).toBe(3);
+  });
+
+  it('switch-l: entering from non-stem edge derails', () => {
+    const b = createBoard();
+    // Train at (-1,1) exits edge 0 → neighbor (0,0). Entry = opposite(0) = 3.
+    // switch-l rotation 0 state A → [0,2]. Neither edge is 3 → derail.
+    b.set({ q: -1, r: 1 }, makeTile('straight', 0));
+    b.set({ q: 0, r: 0 }, { type: 'switch-l', rotation: 0, locked: false, switchState: 'A' } as Tile);
+
+    const next = computeNextStep(b, trainOn({ q: -1, r: 1 }, 0, 0));
+
+    expect(next).toBeNull();
+  });
 });
