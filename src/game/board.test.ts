@@ -62,12 +62,39 @@ describe('seedBoard', () => {
     expect([...b3.cells()]).toHaveLength(37);   // 1 + 3*3*4
   });
 
-  it('origin (0,0) is a straight tile, unlocked', () => {
+  it('origin (0,0) is a station tile, unlocked', () => {
     const b = seedBoard({ radius: 3, rng: () => 0.5 });
     const origin = b.get({ q: 0, r: 0 });
     expect(origin).toBeDefined();
-    expect(origin!.type).toBe('straight');
+    expect(origin!.type).toBe('station');
     expect(origin!.locked).toBe(false);
+  });
+
+  it('has at least 1 non-origin station', () => {
+    const b = seedBoard({ radius: 3, rng: () => 0.5 });
+    let stationCount = 0;
+    for (const [hex, tile] of b.cells()) {
+      if (tile.type === 'station' && !(hex.q === 0 && hex.r === 0)) stationCount++;
+    }
+    expect(stationCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('has at least 2 switches total', () => {
+    const b = seedBoard({ radius: 3, rng: () => 0.5 });
+    let switchCount = 0;
+    for (const [, tile] of b.cells()) {
+      if (tile.type === 'switch-l' || tile.type === 'switch-r') switchCount++;
+    }
+    expect(switchCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('switch tiles are seeded with switchState A', () => {
+    const b = seedBoard({ radius: 3, rng: () => 0.5 });
+    for (const [, tile] of b.cells()) {
+      if (tile.type === 'switch-l' || tile.type === 'switch-r') {
+        expect(tile.switchState).toBe('A');
+      }
+    }
   });
 
   it('covers all axial cells within radius', () => {

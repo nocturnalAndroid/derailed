@@ -47,6 +47,9 @@ const NON_ORIGIN_WEIGHTS: ReadonlyArray<readonly [TileType, number]> = [
   ['double-bend', 4],
   ['cross-2',     1],
   ['cross-3',     1],
+  ['station',     2],
+  ['switch-l',    1],
+  ['switch-r',    1],
 ];
 const TOTAL_WEIGHT = NON_ORIGIN_WEIGHTS.reduce((s, [, w]) => s + w, 0);
 
@@ -57,6 +60,35 @@ function pickType(rng: () => number): TileType {
     if (r < 0) return type;
   }
   return NON_ORIGIN_WEIGHTS[NON_ORIGIN_WEIGHTS.length - 1]![0];
+}
+
+type MinConstraint = { type: TileType; min: number };
+
+const MIN_CONSTRAINTS: MinConstraint[] = [
+  { type: 'station',  min: 1 },
+  { type: 'switch-l', min: 1 },
+  { type: 'switch-r', min: 1 },
+];
+
+function enforceMinimums(board: Board, nonOriginCoords: HexCoord[], rng: () => number): void {
+  for (const { type, min } of MIN_CONSTRAINTS) {
+    let count = 0;
+    for (const h of nonOriginCoords) {
+      if (board.get(h)?.type === type) count++;
+    }
+    if (count >= min) continue;
+    // Pick a random starting index and scan linearly to avoid infinite loops
+    const start = Math.floor(rng() * nonOriginCoords.length);
+    for (let i = 0; i < nonOriginCoords.length && count < min; i++) {
+      const h = nonOriginCoords[(start + i) % nonOriginCoords.length]!;
+      const existing = board.get(h)!;
+      if (existing.type !== 'station' && existing.type !== 'switch-l' && existing.type !== 'switch-r') {
+        const switchState = (type === 'switch-l' || type === 'switch-r') ? 'A' as const : undefined;
+        board.set(h, { type, rotation: existing.rotation, locked: false, switchState });
+        count++;
+      }
+    }
+  }
 }
 
 export type SeedOptions =
@@ -87,11 +119,15 @@ export function seedBoard(opts: SeedOptions): Board {
     }
   }
 
+  const nonOriginCoords: HexCoord[] = [];
   for (const h of coords) {
     const isOrigin = h.q === 0 && h.r === 0;
-    const type: TileType = isOrigin ? 'straight' : pickType(rng);
+    const type: TileType = isOrigin ? 'station' : pickType(rng);
     const rotation = Math.floor(rng() * 6) as Edge;
-    b.set(h, { type, rotation, locked: false });
+    const switchState = (type === 'switch-l' || type === 'switch-r') ? 'A' as const : undefined;
+    b.set(h, { type, rotation, locked: false, switchState });
+    if (!isOrigin) nonOriginCoords.push(h);
   }
+  enforceMinimums(b, nonOriginCoords, rng);
   return b;
 }
