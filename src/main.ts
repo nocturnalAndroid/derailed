@@ -46,7 +46,7 @@ function loop(ts: number): void {
     lastPhase = state.phase;
     if (state.phase === 'pre-game')  hideOverlay();
     if (state.phase === 'running')   hideOverlay();
-    if (state.phase === 'derailed')  showBlocking('Derailed — tap to restart');
+    if (state.phase === 'derailed')  showBlocking(`Derailed — Score: ${state.score}\nTap to restart`);
   }
 
   requestAnimationFrame(loop);

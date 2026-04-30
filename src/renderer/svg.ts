@@ -14,6 +14,7 @@ export type RendererRefs = {
   train: SVGGElement;
   countdown: SVGTextElement;
   countdownRing: SVGCircleElement;
+  scoreText: SVGTextElement;
 };
 
 export function initRenderer(container: HTMLElement, board: Board): RendererRefs {
@@ -64,6 +65,22 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
       pathEls.push(p);
     }
 
+    if (tile.type === 'station') {
+      const disc = document.createElementNS(SVG_NS, 'circle');
+      disc.setAttribute('cx', '0');
+      disc.setAttribute('cy', '0');
+      disc.setAttribute('r', String(HEX_SIZE * 0.22));
+      disc.setAttribute('fill', '#e0c878');
+      disc.setAttribute('stroke', '#1a1a1a');
+      disc.setAttribute('stroke-width', '2');
+      g.appendChild(disc);
+    }
+
+    if ((tile.type === 'switch-l' || tile.type === 'switch-r') && pathEls.length === 2) {
+      pathEls[1]!.setAttribute('stroke-opacity', '0.25');
+      pathEls[1]!.setAttribute('stroke-dasharray', '4 3');
+    }
+
     svg.appendChild(g);
     tiles.set(hexKey(hex), { group: g, paths: pathEls });
   }
@@ -100,7 +117,18 @@ export function initRenderer(container: HTMLElement, board: Board): RendererRefs
   countdown.style.display = 'none';
   svg.appendChild(countdown);
 
-  return { svg, tiles, train, countdown, countdownRing };
+  const scoreText = document.createElementNS(SVG_NS, 'text');
+  scoreText.setAttribute('text-anchor', 'start');
+  scoreText.setAttribute('dominant-baseline', 'hanging');
+  scoreText.setAttribute('x', String(minX - pad + 10));
+  scoreText.setAttribute('y', String(minY - pad + 10));
+  scoreText.setAttribute('font-size', String(HEX_SIZE * 0.6));
+  scoreText.setAttribute('font-weight', '700');
+  scoreText.setAttribute('fill', '#e0c878');
+  scoreText.style.display = 'none';
+  svg.appendChild(scoreText);
+
+  return { svg, tiles, train, countdown, countdownRing, scoreText };
 }
 
 function buildHexBackground(size: number): SVGPolygonElement {

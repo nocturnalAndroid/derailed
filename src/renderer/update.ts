@@ -9,6 +9,7 @@ export function render(refs: RendererRefs, state: GameState): void {
   updateTiles(refs, state);
   updateTrain(refs, state);
   updateCountdown(refs, state);
+  updateScore(refs, state);
 }
 
 function updateTiles(refs: RendererRefs, state: GameState): void {
@@ -21,6 +22,13 @@ function updateTiles(refs: RendererRefs, state: GameState): void {
       `translate(${x} ${y}) rotate(${tile.rotation * 60})`,
     );
     entry.group.classList.toggle('locked', tile.locked);
+    if ((tile.type === 'switch-l' || tile.type === 'switch-r') && entry.paths.length === 2) {
+      const aActive = tile.switchState === 'A';
+      entry.paths[0]!.setAttribute('stroke-opacity', aActive ? '1' : '0.25');
+      entry.paths[0]!.setAttribute('stroke-dasharray', aActive ? 'none' : '4 3');
+      entry.paths[1]!.setAttribute('stroke-opacity', aActive ? '0.25' : '1');
+      entry.paths[1]!.setAttribute('stroke-dasharray', aActive ? '4 3' : 'none');
+    }
   }
 }
 
@@ -74,6 +82,15 @@ function updateTrain(refs: RendererRefs, state: GameState): void {
   const angleDeg = (Math.atan2(hy, hx) * 180) / Math.PI;
 
   refs.train.setAttribute('transform', `translate(${x} ${y}) rotate(${angleDeg})`);
+}
+
+function updateScore(refs: RendererRefs, state: GameState): void {
+  if (state.phase === 'running') {
+    refs.scoreText.style.display = '';
+    refs.scoreText.textContent = String(state.score);
+  } else {
+    refs.scoreText.style.display = 'none';
+  }
 }
 
 function updateCountdown(refs: RendererRefs, state: GameState): void {
