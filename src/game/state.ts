@@ -17,6 +17,8 @@ export const DEFAULTS = {
   trainSpeed: 0.5,   // connection-lengths per second
 };
 
+export const SCORE_PER_STATION = 1;
+
 function initialTrainFromOrigin(board: Board): Train {
   const originTile = board.get({ q: 0, r: 0 });
   if (!originTile) throw new Error('board has no origin at (0,0)');
@@ -73,12 +75,20 @@ export function tick(state: GameState, dtMs: number): void {
 
   while (state.train.progress >= 1.0) {
     state.train.progress -= 1.0;
+    const prevTile = state.board.get(state.train.tile);
     const next = computeNextStep(state.board, state.train);
     if (next === null) {
       state.phase = 'derailed';
       return;
     }
+    if (prevTile && (prevTile.type === 'switch-l' || prevTile.type === 'switch-r')) {
+      prevTile.switchState = prevTile.switchState === 'A' ? 'B' : 'A';
+    }
     state.board.lock(next.tile);
     state.train = next;
+    const enteredTile = state.board.get(next.tile);
+    if (enteredTile && enteredTile.type === 'station') {
+      state.score += SCORE_PER_STATION;
+    }
   }
 }
